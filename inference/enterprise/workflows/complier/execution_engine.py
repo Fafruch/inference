@@ -34,8 +34,8 @@ from inference.enterprise.workflows.complier.steps_executors.constants import (
 from inference.enterprise.workflows.complier.steps_executors.models import (
     run_barcode_detector_step,
     run_clip_comparison_step,
-    run_lmm_for_classification_step,
-    run_lmm_step,
+    run_llm_for_classification_step,
+    run_llm_step,
     run_ocr_model_step,
     run_qr_code_detector_step,
     run_roboflow_model_step,
@@ -74,8 +74,8 @@ STEP_TYPE2EXECUTOR_MAPPING = {
     "ActiveLearningDataCollector": run_active_learning_data_collector,
     "YoloWorld": run_yolo_world_model_step,  # left for the time being, to be removed
     "YoloWorldModel": run_yolo_world_model_step,
-    "LMM": run_lmm_step,
-    "LMMForClassification": run_lmm_for_classification_step,
+    "LLM": run_llm_step,
+    "LLMForClassification": run_llm_for_classification_step,
     "QRCodeDetection": run_qr_code_detector_step,  # left for the time being, to be removed
     "QRCodeDetector": run_qr_code_detector_step,
     "BarcodeDetection": run_barcode_detector_step,  # left for the time being, to be removed

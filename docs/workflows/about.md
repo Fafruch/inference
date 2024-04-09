@@ -6,7 +6,7 @@ With Inference workflows, you can:
 
 - Detect, classify, and segment objects in images.
 - Apply filters (i.e. process detections in a specific region, filter detections by confidence).
-- Use Large Multimodal Models (LMMs) to make determinations at any stage in a workflow.
+- Use Large Multimodal Models (LLMs) to make determinations at any stage in a workflow.
 
 You can build simple workflows in the Roboflow web interface that you can then deploy to your own device or the cloud using Inference.
 

@@ -77,8 +77,8 @@ nav:
       - Reach Consensus Between Models: workflows/reach_consensus.md
       - Active Learning: workflows/active_learning.md
       - Foundation Models:
-        - Use an LMM: workflows/use_lmm.md
-        - Use an LMM (Classification): workflows/use_lmm_classification.md
+        - Use an LLM: workflows/use_llm.md
+        - Use an LLM (Classification): workflows/use_llm_classification.md
         - Compare CLIP Vectors: workflows/compare_clip_vectors.md
         - YOLO-World: workflows/yolo_world.md
       - Advanced:

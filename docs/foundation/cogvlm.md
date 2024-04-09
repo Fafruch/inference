@@ -1,4 +1,4 @@
-<a href="https://github.com/THUDM/CogVLM" target="_blank">CogVLM</a> is a Large Multimodal Model (LMM). CogVLM is available for use in Inference.
+<a href="https://github.com/THUDM/CogVLM" target="_blank">CogVLM</a> is a Large Multimodal Model (LLM). CogVLM is available for use in Inference.
 
 You can ask CogVLM questions about the contents of an image and retrieve a text response.
 

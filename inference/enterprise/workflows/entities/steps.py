@@ -1595,7 +1595,7 @@ ACTIVE_LEARNING_DATA_COLLECTOR_ELIGIBLE_SELECTORS = {
     "DetectionsConsensus": "predictions",
     "DetectionOffset": "predictions",
     "ClassificationModel": "top",
-    "LMMForClassification": "top",
+    "LLMForClassification": "top",
 }
 
 
@@ -1916,10 +1916,10 @@ class YoloWorldModel(BaseModel, StepInterface):
 
 GPT_4V_MODEL_TYPE = "gpt_4v"
 COG_VLM_MODEL_TYPE = "cog_vlm"
-SUPPORTED_LMMS = {GPT_4V_MODEL_TYPE, COG_VLM_MODEL_TYPE}
+SUPPORTED_LLMS = {GPT_4V_MODEL_TYPE, COG_VLM_MODEL_TYPE}
 
 
-class LMMConfig(BaseModel):
+class LLMConfig(BaseModel):
     max_tokens: int = Field(default=450)
     gpt_image_detail: Literal["low", "high", "auto"] = Field(
         default="auto",
@@ -1928,36 +1928,36 @@ class LMMConfig(BaseModel):
     gpt_model_version: str = Field(default="gpt-4-vision-preview")
 
 
-class LMM(BaseModel, StepInterface):
+class LLM(BaseModel, StepInterface):
     model_config = ConfigDict(
         json_schema_extra={
-            "description": "Block that make it possible to use chosen LMM model within `workflows` - with arbitrary prompt and possibility to retrieve structured JSON output.",
-            "docs": "https://inference.roboflow.com/workflows/use_lmm/",
+            "description": "Block that make it possible to use chosen LLM model within `workflows` - with arbitrary prompt and possibility to retrieve structured JSON output.",
+            "docs": "https://inference.roboflow.com/workflows/use_llm/",
         }
     )
-    type: Literal["LMM"]
+    type: Literal["LLM"]
     name: str = Field(description="Unique name of step in workflows")
     image: Union[InferenceImageSelector, OutputStepImageSelector] = Field(
         description="Reference at image to be used as input for step processing",
         examples=["$inputs.image", "$steps.cropping.crops"],
     )
     prompt: Union[InferenceParameterSelector(kind=[STRING_KIND]), str] = Field(
-        description="Holds unconstrained text prompt to LMM mode",
+        description="Holds unconstrained text prompt to LLM mode",
         examples=["my prompt", "$inputs.prompt"],
     )
-    lmm_type: Union[
+    llm_type: Union[
         InferenceParameterSelector(kind=[STRING_KIND]), Literal["gpt_4v", "cog_vlm"]
     ] = Field(
-        description="Type of LMM to be used", examples=["gpt_4v", "$inputs.lmm_type"]
+        description="Type of LLM to be used", examples=["gpt_4v", "$inputs.llm_type"]
     )
-    lmm_config: LMMConfig = Field(
-        default_factory=lambda: LMMConfig(), description="Configuration of LMM"
+    llm_config: LLMConfig = Field(
+        default_factory=lambda: LLMConfig(), description="Configuration of LLM"
     )
     remote_api_key: Union[
         InferenceParameterSelector(kind=[STRING_KIND]), Optional[str]
     ] = Field(
         default=None,
-        description="Holds API key required to call LMM model - in current state of development, we require OpenAI key when `lmm_type=gpt_4v` and do not require additional API key for CogVLM calls.",
+        description="Holds API key required to call LLM model - in current state of development, we require OpenAI key when `llm_type=gpt_4v` and do not require additional API key for CogVLM calls.",
         examples=["xxx-xxx", "$inputs.api_key"],
     )
     json_output: Optional[
@@ -1970,7 +1970,7 @@ class LMM(BaseModel, StepInterface):
 
     @classmethod
     def describe_outputs(cls) -> List[OutputDefinition]:
-        return super(LMM, cls).describe_outputs() + [
+        return super(LLM, cls).describe_outputs() + [
             OutputDefinition(name="parent_id", kind=[PARENT_ID_KIND]),
             OutputDefinition(name="image", kind=[IMAGE_METADATA_KIND]),
             OutputDefinition(name="structured_output", kind=[DICTIONARY_KIND]),
@@ -1994,7 +1994,7 @@ class LMM(BaseModel, StepInterface):
         for key in value.keys():
             if key in output_names:
                 raise ValueError(
-                    f"`json_output` specified for `LMM` step defines field (`{key}`) that collide with step "
+                    f"`json_output` specified for `LLM` step defines field (`{key}`) that collide with step "
                     f"output names: {output_names} which is forbidden."
                 )
         return value
@@ -2003,7 +2003,7 @@ class LMM(BaseModel, StepInterface):
         return {
             "image",
             "prompt",
-            "lmm_type",
+            "llm_type",
             "remote_api_key",
             "json_output",
         }
@@ -2033,7 +2033,7 @@ class LMM(BaseModel, StepInterface):
             input_step=input_step,
             applicable_fields={
                 "prompt",
-                "lmm_type",
+                "llm_type",
                 "remote_api_key",
                 "json_output",
             },
@@ -2049,10 +2049,10 @@ class LMM(BaseModel, StepInterface):
                 value=value,
                 error=VariableTypeError,
             )
-        elif field_name == "lmm_type":
+        elif field_name == "llm_type":
             validate_field_is_one_of_selected_values(
                 field_name=field_name,
-                selected_values=SUPPORTED_LMMS,
+                selected_values=SUPPORTED_LLMS,
                 value=value,
                 error=VariableTypeError,
             )
@@ -2081,7 +2081,7 @@ class LMM(BaseModel, StepInterface):
             for key in value.keys():
                 if key in output_names:
                     raise VariableTypeError(
-                        f"`json_output` injected for `LMM` step {self.name} defines field (`{key}`) that collide "
+                        f"`json_output` injected for `LLM` step {self.name} defines field (`{key}`) that collide "
                         f"with step output names: {output_names} which is forbidden."
                     )
 
@@ -2089,44 +2089,44 @@ class LMM(BaseModel, StepInterface):
         return self.type
 
 
-class LMMForClassification(BaseModel, StepInterface):
+class LLMForClassification(BaseModel, StepInterface):
     model_config = ConfigDict(
         json_schema_extra={
-            "description": "Block that make it possible to use chosen LMM model as zero-shot classifier.",
-            "docs": "https://inference.roboflow.com/workflows/use_lmm_classification",
+            "description": "Block that make it possible to use chosen LLM model as zero-shot classifier.",
+            "docs": "https://inference.roboflow.com/workflows/use_llm_classification",
         }
     )
-    type: Literal["LMMForClassification"]
+    type: Literal["LLMForClassification"]
     name: str = Field(description="Unique name of step in workflows")
     image: Union[InferenceImageSelector, OutputStepImageSelector] = Field(
         description="Reference at image to be used as input for step processing",
         examples=["$inputs.image", "$steps.cropping.crops"],
     )
-    lmm_type: Union[
+    llm_type: Union[
         InferenceParameterSelector(kind=[STRING_KIND]), Literal["gpt_4v", "cog_vlm"]
     ] = Field(
-        description="Type of LMM to be used", examples=["gpt_4v", "$inputs.lmm_type"]
+        description="Type of LLM to be used", examples=["gpt_4v", "$inputs.llm_type"]
     )
     classes: Union[
         List[str], InferenceParameterSelector(kind=[LIST_OF_VALUES_KIND])
     ] = Field(
-        description="List of classes that LMM shall classify against",
+        description="List of classes that LLM shall classify against",
         examples=[["a", "b"], "$inputs.classes"],
     )
-    lmm_config: LMMConfig = Field(
-        default_factory=lambda: LMMConfig(), description="Configuration of LMM"
+    llm_config: LLMConfig = Field(
+        default_factory=lambda: LLMConfig(), description="Configuration of LLM"
     )
     remote_api_key: Union[
         InferenceParameterSelector(kind=[STRING_KIND]), Optional[str]
     ] = Field(
         default=None,
-        description="Holds API key required to call LMM model - in current state of development, we require OpenAI key when `lmm_type=gpt_4v` and do not require additional API key for CogVLM calls.",
+        description="Holds API key required to call LLM model - in current state of development, we require OpenAI key when `llm_type=gpt_4v` and do not require additional API key for CogVLM calls.",
         examples=["xxx-xxx", "$inputs.api_key"],
     )
 
     @classmethod
     def describe_outputs(cls) -> List[OutputDefinition]:
-        return super(LMMForClassification, cls).describe_outputs() + [
+        return super(LLMForClassification, cls).describe_outputs() + [
             OutputDefinition(name="raw_output", kind=[STRING_KIND]),
             OutputDefinition(name="top", kind=[STRING_KIND]),
             OutputDefinition(name="parent_id", kind=[PARENT_ID_KIND]),
@@ -2137,7 +2137,7 @@ class LMMForClassification(BaseModel, StepInterface):
     def get_input_names(self) -> Set[str]:
         return {
             "image",
-            "lmm_type",
+            "llm_type",
             "classes",
             "remote_api_key",
         }
@@ -2163,7 +2163,7 @@ class LMMForClassification(BaseModel, StepInterface):
             field_name=field_name,
             input_step=input_step,
             applicable_fields={
-                "lmm_type",
+                "llm_type",
                 "classes",
                 "remote_api_key",
             },
@@ -2172,10 +2172,10 @@ class LMMForClassification(BaseModel, StepInterface):
     def validate_field_binding(self, field_name: str, value: Any) -> None:
         if field_name == "image":
             validate_image_biding(value=value)
-        elif field_name == "lmm_type":
+        elif field_name == "llm_type":
             validate_field_is_one_of_selected_values(
                 field_name=field_name,
-                selected_values=SUPPORTED_LMMS,
+                selected_values=SUPPORTED_LLMS,
                 value=value,
                 error=VariableTypeError,
             )

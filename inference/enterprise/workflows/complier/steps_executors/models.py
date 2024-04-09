@@ -57,14 +57,14 @@ from inference.enterprise.workflows.complier.steps_executors.utils import (
 from inference.enterprise.workflows.complier.utils import construct_step_selector
 from inference.enterprise.workflows.entities.steps import (
     GPT_4V_MODEL_TYPE,
-    LMM,
+    LLM,
     BarcodeDetector,
     ClassificationModel,
     ClipComparison,
     InstanceSegmentationModel,
     KeypointsDetectionModel,
-    LMMConfig,
-    LMMForClassification,
+    LLMConfig,
+    LLMForClassification,
     MultiLabelClassificationModel,
     ObjectDetectionModel,
     OCRModel,
@@ -883,8 +883,8 @@ ROBOFLOW_MODEL2HOSTED_ENDPOINT = {
 }
 
 
-async def run_lmm_step(
-    step: LMM,
+async def run_llm_step(
+    step: LLM,
     runtime_parameters: Dict[str, Any],
     outputs_lookup: OutputsLookup,
     model_manager: ModelManager,
@@ -902,7 +902,7 @@ async def run_lmm_step(
         outputs_lookup=outputs_lookup,
     )
     prompt = resolve_parameter_closure(step.prompt)
-    lmm_type = resolve_parameter_closure(step.lmm_type)
+    llm_type = resolve_parameter_closure(step.llm_type)
     remote_api_key = resolve_parameter_closure(step.remote_api_key)
     json_output = resolve_parameter_closure(step.json_output)
     if json_output is not None:
@@ -910,12 +910,12 @@ async def run_lmm_step(
             f"{prompt}\n\nVALID response format is JSON:\n"
             f"{json.dumps(json_output, indent=4)}"
         )
-    if lmm_type == GPT_4V_MODEL_TYPE:
+    if llm_type == GPT_4V_MODEL_TYPE:
         raw_output, structured_output = await run_gpt_4v_llm_prompting(
             image=image,
             prompt=prompt,
             remote_api_key=remote_api_key,
-            lmm_config=step.lmm_config,
+            llm_config=step.llm_config,
             expected_output=json_output,
         )
     else:
@@ -945,8 +945,8 @@ async def run_lmm_step(
     return None, outputs_lookup
 
 
-async def run_lmm_for_classification_step(
-    step: LMMForClassification,
+async def run_llm_for_classification_step(
+    step: LLMForClassification,
     runtime_parameters: Dict[str, Any],
     outputs_lookup: OutputsLookup,
     model_manager: ModelManager,
@@ -963,7 +963,7 @@ async def run_lmm_for_classification_step(
         runtime_parameters=runtime_parameters,
         outputs_lookup=outputs_lookup,
     )
-    lmm_type = resolve_parameter_closure(step.lmm_type)
+    llm_type = resolve_parameter_closure(step.llm_type)
     remote_api_key = resolve_parameter_closure(step.remote_api_key)
     classes = resolve_parameter_closure(step.classes)
     prompt = (
@@ -971,12 +971,12 @@ async def run_lmm_for_classification_step(
         f"assigned one of the following classes: {classes}. "
         f'Your response must be JSON in format: {{"top": "some_class"}}'
     )
-    if lmm_type == GPT_4V_MODEL_TYPE:
+    if llm_type == GPT_4V_MODEL_TYPE:
         raw_output, structured_output = await run_gpt_4v_llm_prompting(
             image=image,
             prompt=prompt,
             remote_api_key=remote_api_key,
-            lmm_config=step.lmm_config,
+            llm_config=step.llm_config,
             expected_output={"top": "name of the class"},
         )
     else:
@@ -1009,7 +1009,7 @@ async def run_gpt_4v_llm_prompting(
     image: List[Dict[str, Any]],
     prompt: str,
     remote_api_key: Optional[str],
-    lmm_config: LMMConfig,
+    llm_config: LLMConfig,
     expected_output: Optional[Dict[str, str]],
 ) -> Tuple[List[Dict[str, str]], List[dict]]:
     if remote_api_key is None:
@@ -1020,12 +1020,12 @@ async def run_gpt_4v_llm_prompting(
         image=image,
         remote_api_key=remote_api_key,
         prompt=prompt,
-        lmm_config=lmm_config,
+        llm_config=llm_config,
     )
     if expected_output is None:
         return results, [{} for _ in range(len(results))]
     parsed_output = [
-        try_parse_lmm_output_to_json(
+        try_parse_llm_output_to_json(
             output=r["content"], expected_output=expected_output
         )
         for r in results
@@ -1037,7 +1037,7 @@ async def execute_gpt_4v_requests(
     image: List[dict],
     remote_api_key: str,
     prompt: str,
-    lmm_config: LMMConfig,
+    llm_config: LLMConfig,
 ) -> List[Dict[str, str]]:
     client = AsyncOpenAI(api_key=remote_api_key)
     results = []
@@ -1054,7 +1054,7 @@ async def execute_gpt_4v_requests(
                 client=client,
                 image=image,
                 prompt=prompt,
-                lmm_config=lmm_config,
+                llm_config=llm_config,
             )
             batch_coroutines.append(coroutine)
         batch_results = await asyncio.gather(*batch_coroutines)
@@ -1066,7 +1066,7 @@ async def execute_gpt_4v_request(
     client: AsyncOpenAI,
     image: Dict[str, Any],
     prompt: str,
-    lmm_config: LMMConfig,
+    llm_config: LLMConfig,
 ) -> Dict[str, str]:
     loaded_image, _ = load_image(image)
     image_metadata = {"width": loaded_image.shape[1], "height": loaded_image.shape[0]}
@@ -1074,7 +1074,7 @@ async def execute_gpt_4v_request(
         "ascii"
     )
     response = await client.chat.completions.create(
-        model=lmm_config.gpt_model_version,
+        model=llm_config.gpt_model_version,
         messages=[
             {
                 "role": "user",
@@ -1084,13 +1084,13 @@ async def execute_gpt_4v_request(
                         "type": "image_url",
                         "image_url": {
                             "url": f"data:image/jpeg;base64,{base64_image}",
-                            "detail": lmm_config.gpt_image_detail,
+                            "detail": llm_config.gpt_image_detail,
                         },
                     },
                 ],
             }
         ],
-        max_tokens=lmm_config.max_tokens,
+        max_tokens=llm_config.max_tokens,
     )
     return {"content": response.choices[0].message.content, "image": image_metadata}
 
@@ -1119,7 +1119,7 @@ async def run_cog_vlm_prompting(
     if expected_output is None:
         return cogvlm_generations, [{} for _ in range(len(cogvlm_generations))]
     parsed_output = [
-        try_parse_lmm_output_to_json(
+        try_parse_llm_output_to_json(
             output=r["content"],
             expected_output=expected_output,
         )
@@ -1208,7 +1208,7 @@ async def get_cogvlm_generations_from_remote_api(
     return results
 
 
-def try_parse_lmm_output_to_json(
+def try_parse_llm_output_to_json(
     output: str, expected_output: Dict[str, str]
 ) -> Union[list, dict]:
     json_blocks_found = JSON_MARKDOWN_BLOCK_PATTERN.findall(output)

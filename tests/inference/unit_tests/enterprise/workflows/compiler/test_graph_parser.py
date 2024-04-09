@@ -759,7 +759,7 @@ def test_prepare_execution_graph_when_graph_when_steps_connection_make_the_graph
         )
 
 
-def test_prepare_execution_graph_when_lmm_with_yolo_world_is_used_along_with_wildcard_output_selector() -> (
+def test_prepare_execution_graph_when_llm_with_yolo_world_is_used_along_with_wildcard_output_selector() -> (
     None
 ):
     # given
@@ -771,7 +771,7 @@ def test_prepare_execution_graph_when_lmm_with_yolo_world_is_used_along_with_wil
                 {"type": "InferenceParameter", "name": "detection_classes"},
                 {"type": "InferenceParameter", "name": "classification_classes"},
                 {"type": "InferenceParameter", "name": "open_ai_key"},
-                {"type": "InferenceParameter", "name": "lmm_type"},
+                {"type": "InferenceParameter", "name": "llm_type"},
             ],
             "steps": [
                 {
@@ -788,10 +788,10 @@ def test_prepare_execution_graph_when_lmm_with_yolo_world_is_used_along_with_wil
                     "predictions": "$steps.step_1.predictions",
                 },
                 {
-                    "type": "LMMForClassification",
+                    "type": "LLMForClassification",
                     "name": "step_3",
                     "image": "$steps.step_2.crops",
-                    "lmm_type": "$inputs.lmm_type",
+                    "llm_type": "$inputs.llm_type",
                     "classes": "$inputs.classification_classes",
                     "remote_api_key": "$inputs.open_ai_key",
                 },
@@ -831,16 +831,16 @@ def test_prepare_execution_graph_when_lmm_with_yolo_world_is_used_along_with_wil
     ), "YoloWorld block must be connected to crop step"
     assert result.has_edge(
         "$steps.step_2", "$steps.step_3"
-    ), "Crop block must be connected to LMM block"
+    ), "Crop block must be connected to LLM block"
     assert result.has_edge(
-        "$inputs.lmm_type", "$steps.step_3"
-    ), "lmm_type must be connected to LMM block"
+        "$inputs.llm_type", "$steps.step_3"
+    ), "llm_type must be connected to LLM block"
     assert result.has_edge(
         "$inputs.classification_classes", "$steps.step_3"
-    ), "classification_classes must be connected to LMM block"
+    ), "classification_classes must be connected to LLM block"
     assert result.has_edge(
         "$inputs.open_ai_key", "$steps.step_3"
-    ), "open_ai_key must be connected to LMM block"
+    ), "open_ai_key must be connected to LLM block"
     assert result.has_edge(
         "$steps.step_1", "$outputs.characters_detections"
     ), "characters_detections must hold YoloWorld model output"
@@ -849,7 +849,7 @@ def test_prepare_execution_graph_when_lmm_with_yolo_world_is_used_along_with_wil
     ), "crops must hold Crop step output"
     assert result.has_edge(
         "$steps.step_3", "$outputs.llm_output"
-    ), "llm_output must hold (wildcard) LMM block output"
+    ), "llm_output must hold (wildcard) LLM block output"
     assert result.has_edge(
         "$steps.step_3", "$outputs.top"
-    ), "top must hold (specific) LMM block output"
+    ), "top must hold (specific) LLM block output"

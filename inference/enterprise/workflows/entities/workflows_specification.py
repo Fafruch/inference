@@ -9,7 +9,7 @@ from inference.enterprise.workflows.entities.inputs import (
 )
 from inference.enterprise.workflows.entities.outputs import JsonField
 from inference.enterprise.workflows.entities.steps import (
-    LMM,
+    LLM,
     AbsoluteStaticCrop,
     ActiveLearningDataCollector,
     BarcodeDetector,
@@ -22,7 +22,7 @@ from inference.enterprise.workflows.entities.steps import (
     DetectionsConsensus,
     InstanceSegmentationModel,
     KeypointsDetectionModel,
-    LMMForClassification,
+    LLMForClassification,
     MultiLabelClassificationModel,
     ObjectDetectionModel,
     OCRModel,
@@ -54,8 +54,8 @@ ALL_BLOCKS_CLASSES = [
     DetectionsConsensus,
     ActiveLearningDataCollector,
     YoloWorldModel,
-    LMM,
-    LMMForClassification,
+    LLM,
+    LLMForClassification,
 ]
 
 BlockType = Annotated[
@@ -78,8 +78,8 @@ BlockType = Annotated[
         DetectionsConsensus,
         ActiveLearningDataCollector,
         YoloWorldModel,
-        LMM,
-        LMMForClassification,
+        LLM,
+        LLMForClassification,
     ],
     Field(discriminator="type"),
 ]

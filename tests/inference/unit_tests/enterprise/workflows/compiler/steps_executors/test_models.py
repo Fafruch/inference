@@ -26,7 +26,7 @@ from inference.enterprise.workflows.complier.steps_executors.models import (
     run_cog_vlm_prompting,
     run_qr_code_detector_step,
     try_parse_json,
-    try_parse_lmm_output_to_json,
+    try_parse_llm_output_to_json,
 )
 from inference.enterprise.workflows.entities.steps import (
     BarcodeDetector,
@@ -34,7 +34,7 @@ from inference.enterprise.workflows.entities.steps import (
     ClipComparison,
     InstanceSegmentationModel,
     KeypointsDetectionModel,
-    LMMConfig,
+    LLMConfig,
     MultiLabelClassificationModel,
     ObjectDetectionModel,
     OCRModel,
@@ -370,9 +370,9 @@ def test_try_parse_json_when_input_is_json_parsable_and_all_values_are_delivered
     }, "Both fields must be detected with values specified in content"
 
 
-def test_try_parse_lmm_output_to_json_when_no_json_to_be_found_in_input() -> None:
+def test_try_parse_llm_output_to_json_when_no_json_to_be_found_in_input() -> None:
     # when
-    result = try_parse_lmm_output_to_json(
+    result = try_parse_llm_output_to_json(
         output="for sure not a valid JSON",
         expected_output={"field_a": "my field", "field_b": "other_field"},
     )
@@ -384,7 +384,7 @@ def test_try_parse_lmm_output_to_json_when_no_json_to_be_found_in_input() -> Non
     }, "No field detected is expected output"
 
 
-def test_try_parse_lmm_output_to_json_when_single_json_markdown_block_with_linearised_document_found() -> (
+def test_try_parse_llm_output_to_json_when_single_json_markdown_block_with_linearised_document_found() -> (
     None
 ):
     # given
@@ -396,7 +396,7 @@ This is some comment produced by LLM
 ```
 """.strip()
     # when
-    result = try_parse_lmm_output_to_json(
+    result = try_parse_llm_output_to_json(
         output=output, expected_output={"field_a": "my field", "field_b": "other_field"}
     )
 
@@ -404,7 +404,7 @@ This is some comment produced by LLM
     assert result == {"field_a": 1, "field_b": 37}
 
 
-def test_try_parse_lmm_output_to_json_when_single_json_markdown_block_with_multi_line_document_found() -> (
+def test_try_parse_llm_output_to_json_when_single_json_markdown_block_with_multi_line_document_found() -> (
     None
 ):
     # given
@@ -419,7 +419,7 @@ This is some comment produced by LLM
 ```
 """.strip()
     # when
-    result = try_parse_lmm_output_to_json(
+    result = try_parse_llm_output_to_json(
         output=output, expected_output={"field_a": "my field", "field_b": "other_field"}
     )
 
@@ -427,7 +427,7 @@ This is some comment produced by LLM
     assert result == {"field_a": 1, "field_b": 37}
 
 
-def test_try_parse_lmm_output_to_json_when_single_json_without_markdown_spotted() -> (
+def test_try_parse_llm_output_to_json_when_single_json_without_markdown_spotted() -> (
     None
 ):
     # given
@@ -438,7 +438,7 @@ def test_try_parse_lmm_output_to_json_when_single_json_without_markdown_spotted(
 }
 """.strip()
     # when
-    result = try_parse_lmm_output_to_json(
+    result = try_parse_llm_output_to_json(
         output=output, expected_output={"field_a": "my field", "field_b": "other_field"}
     )
 
@@ -446,7 +446,7 @@ def test_try_parse_lmm_output_to_json_when_single_json_without_markdown_spotted(
     assert result == {"field_a": 1, "field_b": 37}
 
 
-def test_try_parse_lmm_output_to_json_when_multiple_json_markdown_blocks_with_linearised_document_found() -> (
+def test_try_parse_llm_output_to_json_when_multiple_json_markdown_blocks_with_linearised_document_found() -> (
     None
 ):
     # given
@@ -463,7 +463,7 @@ some other comment
 ```
 """.strip()
     # when
-    result = try_parse_lmm_output_to_json(
+    result = try_parse_llm_output_to_json(
         output=output, expected_output={"field_a": "my field", "field_b": "other_field"}
     )
 
@@ -471,7 +471,7 @@ some other comment
     assert result == [{"field_a": 1, "field_b": 37}, {"field_a": 2, "field_b": 47}]
 
 
-def test_try_parse_lmm_output_to_json_when_multiple_json_markdown_blocks_with_multi_line_document_found() -> (
+def test_try_parse_llm_output_to_json_when_multiple_json_markdown_blocks_with_multi_line_document_found() -> (
     None
 ):
     # given
@@ -494,7 +494,7 @@ Some other comment
 ```
 """.strip()
     # when
-    result = try_parse_lmm_output_to_json(
+    result = try_parse_llm_output_to_json(
         output=output, expected_output={"field_a": "my field", "field_b": "other_field"}
     )
 
@@ -715,7 +715,7 @@ async def test_execute_gpt_4v_request() -> None:
             "value": np.zeros((192, 168, 3), dtype=np.uint8),
         },
         prompt="My prompt",
-        lmm_config=LMMConfig(gpt_image_detail="low", max_tokens=120),
+        llm_config=LLMConfig(gpt_image_detail="low", max_tokens=120),
     )
 
     # then
@@ -734,7 +734,7 @@ async def test_execute_gpt_4v_request() -> None:
     ), "Text prompt is expected to be injected without modification"
     assert (
         call_kwargs["messages"][0]["content"][1]["image_url"]["detail"] == "low"
-    ), "Image details level expected to be set to `low` as in LMMConfig"
+    ), "Image details level expected to be set to `low` as in LLMConfig"
 
 
 @pytest.mark.asyncio
