@@ -10,6 +10,9 @@ from collections import defaultdict
 from functools import wraps
 from queue import Queue
 from threading import Event, Lock, Thread
+from uuid import uuid4
+
+import requests
 from typing_extensions import (
     Any,
     Callable,
@@ -45,7 +48,6 @@ from inference.usage_tracking.utils import collect_func_params
 
 from .config import TelemetrySettings, get_telemetry_settings
 from .sqlite_queue import SQLiteQueue
-
 
 T = TypeVar("T")
 P = ParamSpec("P")
