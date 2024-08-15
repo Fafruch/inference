@@ -143,6 +143,7 @@ class Flux1InpaintingBlockV1(WorkflowBlock):
         copied_image = image.numpy_image.copy()
         common_mask = (np.sum(boxes.mask, axis=0) > 0).astype(int)
 
+        # TODO: Add support also for other devices
         pipe = FluxInpaintPipeline.from_pretrained("black-forest-labs/FLUX.1-schnell", torch_dtype=torch.bfloat16).to("cpu")
 
         generator = torch.Generator().manual_seed(seed)
