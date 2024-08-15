@@ -41,6 +41,9 @@ from inference.core.workflows.core_steps.models.foundation.openai.v1 import (
 from inference.core.workflows.core_steps.models.foundation.segment_anything2.v1 import (
     SegmentAnything2BlockV1,
 )
+from inference.core.workflows.core_steps.models.foundation.flux1_inpaint.v1 import (
+    Flux1InpaintingBlockV1,
+)
 from inference.core.workflows.core_steps.models.foundation.yolo_world.v1 import (
     YoloWorldModelBlockV1,
 )
@@ -238,6 +241,7 @@ def load_blocks() -> List[Type[WorkflowBlock]]:
         PolygonVisualizationBlockV1,
         TriangleVisualizationBlockV1,
         RoboflowCustomMetadataBlockV1,
+        Flux1InpaintingBlockV1,
     ]
 
 
