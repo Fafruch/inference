@@ -139,6 +139,10 @@ class Flux1InpaintingBlockV1(WorkflowBlock):
         strength: float,
         seed: int,
     ) -> BlockResult:
+        # TODO: Can we handle it in a more user-friendly way?
+        if boxes.mask is None:
+            return {"image": image}
+
         # TODO: Do we need to copy it?
         copied_image = image.numpy_image.copy()
         common_mask = (np.sum(boxes.mask, axis=0) > 0).astype(int)
