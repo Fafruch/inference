@@ -2,9 +2,10 @@ from typing import List, Literal, Optional, Type, TypeVar, Union
 
 import numpy as np
 import supervision as sv
-import torch
 from pydantic import ConfigDict, Field
-from diffusers import FluxInpaintPipeline
+
+from diffusers import AutoPipelineForInpainting
+import torch
 
 # TODO: Do we need to define requests? Probably not
 from inference.core.entities.requests.sam2 import (
@@ -51,6 +52,8 @@ DETECTIONS_CLASS_NAME_FIELD = "class_name"
 # TODO
 LONG_DESCRIPTION = """
 """
+
+DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 
 MAX_SEED = np.iinfo(np.int32).max
 
@@ -147,8 +150,7 @@ class Flux1InpaintingBlockV1(WorkflowBlock):
         copied_image = image.numpy_image.copy()
         common_mask = (np.sum(boxes.mask, axis=0) > 0).astype(int)
 
-        # TODO: Add support also for other devices
-        pipe = FluxInpaintPipeline.from_pretrained("black-forest-labs/FLUX.1-schnell", torch_dtype=torch.bfloat16).to("cpu")
+        pipe = AutoPipelineForInpainting.from_pretrained("diffusers/stable-diffusion-xl-1.0-inpainting-0.1", torch_dtype=torch.float16, variant="fp16").to(DEVICE)
 
         generator = torch.Generator().manual_seed(seed)
 
@@ -159,6 +161,8 @@ class Flux1InpaintingBlockV1(WorkflowBlock):
             # TODO: Do we need to resize it first?
             # width=width,
             # height=height,
+            # TODO: Add support for guidance_scale
+            # guidance_scale=8.0,
             strength=strength,
             generator=generator,
             num_inference_steps=num_inference_steps
