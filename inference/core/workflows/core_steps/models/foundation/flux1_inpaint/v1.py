@@ -1,27 +1,12 @@
 from typing import List, Literal, Optional, Type, TypeVar, Union
 
-import numpy as np
 import supervision as sv
+
+import numpy as np
 import torch
 from pydantic import ConfigDict, Field
-from diffusers import FluxInpaintPipeline
+from diffusers import StableDiffusionXLInpaintPipeline
 
-# TODO: Do we need to define requests? Probably not
-from inference.core.entities.requests.sam2 import (
-    Box,
-    Sam2Prompt,
-    Sam2PromptSet,
-    Sam2SegmentationRequest,
-)
-# TODO: To remove
-from inference.core.entities.responses.inference import (
-    InferenceResponseImage,
-    InstanceSegmentationInferenceResponse,
-    InstanceSegmentationPrediction,
-    Point,
-)
-# TODO: Do we need to define responses?
-from inference.core.entities.responses.sam2 import Sam2SegmentationPrediction
 from inference.core.workflows.execution_engine.entities.base import (
     OutputDefinition,
     WorkflowImageData,
@@ -53,6 +38,8 @@ LONG_DESCRIPTION = """
 """
 
 MAX_SEED = np.iinfo(np.int32).max
+
+DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 
 
 class BlockManifest(WorkflowBlockManifest):
@@ -145,10 +132,9 @@ class Flux1InpaintingBlockV1(WorkflowBlock):
 
         # TODO: Do we need to copy it?
         copied_image = image.numpy_image.copy()
-        common_mask = (np.sum(boxes.mask, axis=0) > 0).astype(int)
+        common_mask = (np.sum(boxes.mask, axis=0) > 0).astype(np.uint8)
 
-        # TODO: Add support also for other devices
-        pipe = FluxInpaintPipeline.from_pretrained("black-forest-labs/FLUX.1-schnell", torch_dtype=torch.bfloat16).to("cpu")
+        pipe = StableDiffusionXLInpaintPipeline.from_pretrained("stabilityai/sdxl-turbo", safety_checker=None).to(DEVICE)
 
         generator = torch.Generator().manual_seed(seed)
 
@@ -167,7 +153,7 @@ class Flux1InpaintingBlockV1(WorkflowBlock):
         result_image = WorkflowImageData(
             parent_metadata=image.parent_metadata,
             workflow_root_ancestor_metadata=image.workflow_root_ancestor_metadata,
-            numpy_image=result,
+            numpy_image=np.array(result),
         )
 
         return {"image": result_image}
