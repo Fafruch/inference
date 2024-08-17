@@ -1,10 +1,10 @@
 from typing import List, Literal, Optional, Type, TypeVar, Union
 
-import numpy as np
 import supervision as sv
 from pydantic import ConfigDict, Field
 
-from diffusers import AutoPipelineForInpainting
+from diffusers import StableDiffusionXLInpaintPipeline
+import numpy as np
 import torch
 
 # TODO: Do we need to define requests? Probably not
@@ -150,7 +150,8 @@ class Flux1InpaintingBlockV1(WorkflowBlock):
         copied_image = image.numpy_image.copy()
         common_mask = (np.sum(boxes.mask, axis=0) > 0).astype(int)
 
-        pipe = AutoPipelineForInpainting.from_pretrained("diffusers/stable-diffusion-xl-1.0-inpainting-0.1", torch_dtype=torch.float16, variant="fp16").to(DEVICE)
+        # TODO: Add support also for other devices
+        pipe = StableDiffusionXLInpaintPipeline.from_pretrained("stabilityai/sdxl-turbo", safety_checker=None).to("cpu")
 
         generator = torch.Generator().manual_seed(seed)
 
