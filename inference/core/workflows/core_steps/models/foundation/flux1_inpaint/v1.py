@@ -1,11 +1,13 @@
 from typing import List, Literal, Optional, Type, TypeVar, Union
 
 import supervision as sv
+from pydantic import ConfigDict, Field
 
+import io
+import requests
 import numpy as np
 import torch
-from pydantic import ConfigDict, Field
-from diffusers import StableDiffusionXLInpaintPipeline
+from PIL import Image
 
 from inference.core.workflows.execution_engine.entities.base import (
     OutputDefinition,
@@ -37,25 +39,26 @@ DETECTIONS_CLASS_NAME_FIELD = "class_name"
 LONG_DESCRIPTION = """
 """
 
-MAX_SEED = np.iinfo(np.int32).max
-
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
+
+MAX_SEED = np.iinfo(np.int32).max
 
 
 class BlockManifest(WorkflowBlockManifest):
     model_config = ConfigDict(
         json_schema_extra={
-            "name": "Flux 1 Inpainting Model",
+            "name": "Stability AI Inpainting Model",
             "version": "v1",
-            "short_description": "Flux 1 Inpainting",
+            "short_description": "Stability AI Inpainting",
             "long_description": LONG_DESCRIPTION,
+            # TODO: Is it a correct license?
             "license": "Apache-2.0",
             "block_type": "model",
         },
         protected_namespaces=(),
     )
 
-    type: Literal["roboflow_core/flux1_inpaint@v1"]
+    type: Literal["roboflow_core/stability_ai_inpaint@v1"]
     image: Union[WorkflowImageSelector, StepOutputImageSelector] = Field(
         title="Image",
         description="The image to infer on",
@@ -75,20 +78,23 @@ class BlockManifest(WorkflowBlockManifest):
     prompt: Union[WorkflowParameterSelector(kind=[STRING_KIND]), str] = Field(
         description="",  # TODO
     )
-    strength: Union[
-        Optional[float], WorkflowParameterSelector(kind=[FLOAT_KIND])
-    ] = Field(
-        # TODO: Add min/max (<0; 1>)
-        default=0.85,
-        description="Indicates extent to transform the reference `image`. Must be between 0 and 1. `image` is used as a starting point and more noise is added the higher the `strength`.",
+    stability_ai_api_key: Union[WorkflowParameterSelector(kind=[STRING_KIND]), str] = Field(
+        description="",  # TODO
     )
-    num_inference_steps: Union[
-        Optional[int], WorkflowParameterSelector(kind=[INTEGER_KIND])
-    ] = Field(
-        # TODO: Add min/max (<1; 50>)
-        default=20,
-        description="The number of denoising steps. More denoising steps usually lead to a higher quality image",
-    )
+    # strength: Union[
+    #     Optional[float], WorkflowParameterSelector(kind=[FLOAT_KIND])
+    # ] = Field(
+    #     # TODO: Add min/max (<0; 1>)
+    #     default=0.85,
+    #     description="Indicates extent to transform the reference `image`. Must be between 0 and 1. `image` is used as a starting point and more noise is added the higher the `strength`.",
+    # )
+    # num_inference_steps: Union[
+    #     Optional[int], WorkflowParameterSelector(kind=[INTEGER_KIND])
+    # ] = Field(
+    #     # TODO: Add min/max (<1; 50>)
+    #     default=20,
+    #     description="The number of denoising steps. More denoising steps usually lead to a higher quality image",
+    # )
     seed: Union[
         Optional[int], WorkflowParameterSelector(kind=[INTEGER_KIND])
     ] = Field(
@@ -122,8 +128,7 @@ class Flux1InpaintingBlockV1(WorkflowBlock):
         image: WorkflowImageData,
         boxes: sv.Detections,
         prompt: str,
-        num_inference_steps: int,
-        strength: float,
+        stability_ai_api_key: str,
         seed: int,
     ) -> BlockResult:
         # TODO: Can we handle it in a more user-friendly way?
@@ -131,29 +136,47 @@ class Flux1InpaintingBlockV1(WorkflowBlock):
             return {"image": image}
 
         # TODO: Do we need to copy it?
-        copied_image = image.numpy_image.copy()
-        common_mask = (np.sum(boxes.mask, axis=0) > 0).astype(np.uint8)
+        copied_image = Image.fromarray(image.numpy_image.copy())
+        copied_image.save('image.jpg')
+        image_stream = io.BytesIO()
+        copied_image.save(image_stream, format='JPEG')  # Save as JPEG to the stream
+        image_stream.seek(0)  # Reset the stream position to the beginning
 
-        pipe = StableDiffusionXLInpaintPipeline.from_pretrained("stabilityai/sdxl-turbo", safety_checker=None).to(DEVICE)
+        common_mask = ((np.sum(boxes.mask, axis=0) > 0).astype(int) * 255).astype(np.uint8)
+        mask_image = Image.fromarray(common_mask)
+        mask_image.save('mask.jpg')
+        mask_image_stream = io.BytesIO()
+        mask_image.save(mask_image_stream, format='JPEG')  # Save as JPEG to the stream
+        mask_image_stream.seek(0)  # Reset the stream position to the beginning
 
-        generator = torch.Generator().manual_seed(seed)
-
-        result = pipe(
-            prompt=prompt,
-            image=copied_image,
-            mask_image=common_mask,
-            # TODO: Do we need to resize it first?
-            # width=width,
-            # height=height,
-            strength=strength,
-            generator=generator,
-            num_inference_steps=num_inference_steps
-        ).images[0]
-
-        result_image = WorkflowImageData(
-            parent_metadata=image.parent_metadata,
-            workflow_root_ancestor_metadata=image.workflow_root_ancestor_metadata,
-            numpy_image=np.array(result),
+        response = requests.post(
+            f"https://api.stability.ai/v2beta/stable-image/edit/inpaint",
+            headers={
+                "authorization": f"Bearer {stability_ai_api_key}",
+                "accept": "image/*"
+            },
+            files={
+                # "image": open("./dog-wearing-vr-goggles.png", "rb"),
+                # "mask": open("./mask.png", "rb"),
+                'image': ('image.jpg', image_stream, 'image/jpeg'),
+                'mask': ('mask.jpg', mask_image_stream, 'image/jpeg')
+            },
+            data={
+                "prompt": prompt,
+                "output_format": "jpeg",
+            },
         )
 
-        return {"image": result_image}
+        if response.status_code == 200:
+            response_image = Image.open(io.BytesIO(response.content))
+
+            result_image = WorkflowImageData(
+                parent_metadata=image.parent_metadata,
+                workflow_root_ancestor_metadata=image.workflow_root_ancestor_metadata,
+                numpy_image=np.array(response_image),
+            )
+
+            return {"image": result_image}
+        else:
+            # TODO: Different exception
+            raise Exception(str(response.json()))
