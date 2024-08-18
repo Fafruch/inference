@@ -32,6 +32,7 @@ T = TypeVar("T")
 K = TypeVar("K")
 
 DETECTIONS_CLASS_NAME_FIELD = "class_name"
+STABILITY_AI_IMAGE_MAX_PIXELS = 9437184
 
 LONG_DESCRIPTION = """
 Intelligently modify images by filling in or replacing specified areas with new content based on the content of a "mask" image.
@@ -41,8 +42,6 @@ The "mask" is provided in one of two ways:
 1. Explicitly passing in a separate image via the mask parameter (for example passed in from the Segment Anything 2 Model).
 2. Derived from the alpha channel of the image parameter.
 """
-
-MAX_SEED = np.iinfo(np.int32).max
 
 
 class BlockManifest(WorkflowBlockManifest):
@@ -155,7 +154,7 @@ class StabilityAIAPIInpaintingModelBlockV1(WorkflowBlock):
             raise ValueError(f"Stability AI API error: {str(response.json())}")
 
     def _get_image_stream(self, image: WorkflowImageData) -> io.BytesIO:
-        image_copy = Image.fromarray(image.numpy_image.copy())
+        image_copy = self._resize_image(Image.fromarray(image.numpy_image.copy()))
         image_stream = self._get_stream_from_image(image_copy)
 
         return image_stream
@@ -178,6 +177,19 @@ class StabilityAIAPIInpaintingModelBlockV1(WorkflowBlock):
         image_stream.seek(0)
 
         return image_stream
+
+    def _resize_image(self, image: Image):
+        original_width, original_height = image.size
+
+        current_pixels = original_width * original_height
+        scaling_factor = (STABILITY_AI_IMAGE_MAX_PIXELS / current_pixels) ** 0.5
+
+        new_width = int(original_width * scaling_factor)
+        new_height = int(original_height * scaling_factor)
+
+        resized_image = image.resize((new_width, new_height), Image.LANCZOS) if current_pixels > STABILITY_AI_IMAGE_MAX_PIXELS else image
+
+        return resized_image
 
     def _get_response_from_stability_ai_api(self, stability_ai_api_key: str, prompt: str, image_stream: io.BytesIO, mask_stream: io.BytesIO, negative_prompt: str, grow_mask: int, seed: int):
         headers = {
