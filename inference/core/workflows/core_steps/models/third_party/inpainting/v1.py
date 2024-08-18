@@ -61,7 +61,7 @@ class BlockManifest(WorkflowBlockManifest):
         protected_namespaces=(),
     )
 
-    type: Literal["roboflow_core/flux1_inpaint@v1"]
+    type: Literal["roboflow_core/inpainting@v1"]
     image: Union[WorkflowImageSelector, StepOutputImageSelector] = Field(
         title="Image",
         description="The image to infer on",

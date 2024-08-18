@@ -57,7 +57,7 @@ from inference.core.workflows.core_steps.models.foundation.openai.v1 import (
 from inference.core.workflows.core_steps.models.foundation.segment_anything2.v1 import (
     SegmentAnything2BlockV1,
 )
-from inference.core.workflows.core_steps.models.foundation.stability_ai_api_inpaint import (
+from inference.core.workflows.core_steps.models.foundation.stability_ai_api_inpaint.v1 import (
     StabilityAIAPIInpaintingModelBlockV1,
 )
 from inference.core.workflows.core_steps.models.foundation.yolo_world.v1 import (
