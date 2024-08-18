@@ -31,7 +31,6 @@ RUN pip3 install --upgrade pip  && pip3 install \
     -r _requirements.txt \
     -r requirements.sam.txt \
     -r requirements.inpaint.txt \
-    -r requirements.flux.txt \
     -r requirements.clip.txt \
     -r requirements.cpu.txt \
     -r requirements.http.txt \
