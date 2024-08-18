@@ -170,12 +170,8 @@ class InpaintingBlockV1(WorkflowBlock):
         default_torch_dtype = torch.bfloat16
         default_model_pipeline = FluxInpaintPipeline.from_pretrained("black-forest-labs/FLUX.1-schnell", torch_dtype=default_torch_dtype).to(DEVICE)
 
-        match model_selection:
-            case "black-forest-labs/FLUX.1-schnell":
-                return default_model_pipeline
-            case "stabilityai/sdxl-turbo":
-                return StableDiffusionXLInpaintPipeline.from_pretrained("stabilityai/sdxl-turbo", torch_dtype=default_torch_dtype, safety_checker=None).to(DEVICE)
-            case "diffusers/sdxl-1.0-inpainting-0.1":
-                return AutoPipelineForInpainting.from_pretrained("diffusers/stable-diffusion-xl-1.0-inpainting-0.1", torch_dtype=default_torch_dtype, variant="fp16").to(DEVICE)
-            case _:
-                return default_model_pipeline
+        return {
+            "black-forest-labs/FLUX.1-schnell":  default_model_pipeline,
+            "diffusers/sdxl-1.0-inpainting-0.1": AutoPipelineForInpainting.from_pretrained("diffusers/stable-diffusion-xl-1.0-inpainting-0.1", torch_dtype=default_torch_dtype, variant="fp16").to(DEVICE),
+            "stabilityai/sdxl-turbo": StableDiffusionXLInpaintPipeline.from_pretrained("stabilityai/sdxl-turbo", torch_dtype=default_torch_dtype, safety_checker=None).to(DEVICE),
+        }[model_selection]

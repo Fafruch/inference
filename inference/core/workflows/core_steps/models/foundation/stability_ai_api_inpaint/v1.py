@@ -159,7 +159,7 @@ class StabilityAIAPIInpaintingModelBlockV1(WorkflowBlock):
 
         return image_stream
 
-    def _get_mask_stream(self, boxes: sv.Detections) -> io.BytesIO | None:
+    def _get_mask_stream(self, boxes: sv.Detections) -> Union[io.BytesIO, None]:
         if boxes.mask is None:
             return None
 
