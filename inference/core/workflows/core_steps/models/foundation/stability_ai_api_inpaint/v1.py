@@ -182,13 +182,15 @@ class StabilityAIAPIInpaintingModelBlockV1(WorkflowBlock):
     def _get_response_from_stability_ai_api(self, stability_ai_api_key: str, prompt: str, image_stream: io.BytesIO, mask_stream: io.BytesIO, negative_prompt: str, grow_mask: int, seed: int):
         headers = {
             "authorization": f"Bearer {stability_ai_api_key}",
-            "accept": "image/*"
+            "accept": "image/*",
         }
+
         files = {
             "image": ("image.jpg", image_stream, "image/jpeg"),
         }
         if mask_stream is not None:
-            files["mask"] = ("mask.jpg", mask_stream, "image/jpeg"),
+            files["mask"] = ("mask.jpg", mask_stream, "image/jpeg")
+
         data = {
             "prompt": prompt,
             "output_format": "jpeg",
