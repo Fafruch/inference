@@ -81,8 +81,9 @@ class BlockManifest(WorkflowBlockManifest):
     stability_ai_api_key: Union[WorkflowParameterSelector(kind=[STRING_KIND]), str] = Field(
         description="Use your Stability API key to authentication requests",
     )
-    negative_prompt: Union[WorkflowParameterSelector(kind=[STRING_KIND]), str] = Field(
+    negative_prompt: Union[Optional[WorkflowParameterSelector(kind=[STRING_KIND])], str] = Field(
         description="A blurb of text describing what you do not wish to see in the output image. This is an advanced feature.",
+        default=None,
     )
     grow_mask: Union[
         Optional[int], WorkflowParameterSelector(kind=[INTEGER_KIND])
