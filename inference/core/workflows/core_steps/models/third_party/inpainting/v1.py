@@ -142,7 +142,7 @@ class InpaintingBlockV1(WorkflowBlock):
 
         image_copy = image.numpy_image.copy()
         common_mask = (np.sum(boxes.mask, axis=0) > 0).astype(np.uint8)
-        width, height = Image.fromarray(image_copy)
+        width, height = Image.fromarray(image_copy).size
         generator = torch.Generator().manual_seed(seed)
         pipe = self._get_pipeline_based_model_selection(model_selection)
 
