@@ -14,6 +14,7 @@ RUN rm -rf /var/lib/apt/lists/* && apt-get clean && apt-get update -y && DEBIAN_
     && rm -rf /var/lib/apt/lists/*
 
 COPY requirements/requirements.sam.txt \
+    requirements/requirements.inpaint.txt \
     requirements/requirements.clip.txt \
     requirements/requirements.http.txt \
     requirements/requirements.gpu.txt \
@@ -32,6 +33,7 @@ RUN python3 -m pip install -U pip
 RUN python3 -m pip install --extra-index-url https://download.pytorch.org/whl/cu118 \
     -r _requirements.txt \
     -r requirements.sam.txt \
+    -r requirements.inpaint.txt \
     -r requirements.clip.txt \
     -r requirements.http.txt \
     -r requirements.gpu.txt \

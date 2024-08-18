@@ -64,6 +64,7 @@ setuptools.setup(
         ),
         "hosted": read_requirements("requirements/requirements.hosted.txt"),
         "http": read_requirements("requirements/requirements.http.txt"),
+        "inpaint": read_requirements("requirements/requirements.inpaint.txt"),
         "sam": read_requirements("requirements/requirements.sam.txt"),
         "waf": read_requirements("requirements/requirements.waf.txt"),
         "yolo-world": read_requirements("requirements/requirements.yolo_world.txt"),

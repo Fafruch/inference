@@ -24,6 +24,7 @@ COPY requirements/requirements.sam.txt \
 RUN pip install --upgrade pip  && pip install \
     -r _requirements.txt \
     -r requirements.sam.txt \
+    -r requirements.inpaint.txt \
     -r requirements.clip.txt \
     -r requirements.http.txt \
     -r requirements.waf.txt \
