@@ -38,7 +38,7 @@ Intelligently modify images by filling in or replacing specified areas with new 
 
 The "mask" is provided in one of two ways:
 
-1. Explicitly passing in a separate image via the mask parameter, for example passed in from other models.
+1. Explicitly passing in a separate image via the mask parameter (for example passed in from the Segment Anything 2 Model).
 2. Derived from the alpha channel of the image parameter.
 """
 
