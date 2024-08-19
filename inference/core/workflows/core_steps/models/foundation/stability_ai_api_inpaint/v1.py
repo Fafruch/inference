@@ -154,8 +154,9 @@ class StabilityAIAPIInpaintingModelBlockV1(WorkflowBlock):
             raise ValueError(f"Stability AI API error: {str(response.json())}")
 
     def _get_image_stream(self, image: WorkflowImageData) -> io.BytesIO:
-        image_copy = self._resize_image(Image.fromarray(image.numpy_image.copy()))
-        image_stream = self._get_stream_from_image(image_copy)
+        image_copy = Image.fromarray(image.numpy_image.copy())
+        resized_image = self._resize_image(image_copy)
+        image_stream = self._get_stream_from_image(resized_image)
 
         return image_stream
 
@@ -164,11 +165,12 @@ class StabilityAIAPIInpaintingModelBlockV1(WorkflowBlock):
             return None
 
         mask_image = self._map_boxes_mask_to_image(boxes)
-        mask_stream = self._get_stream_from_image(mask_image)
+        resized_mask_image = self._resize_image(mask_image)
+        mask_stream = self._get_stream_from_image(resized_mask_image)
 
         return mask_stream
 
-    def _map_boxes_mask_to_image(self, boxes: sv.Detections):
+    def _map_boxes_mask_to_image(self, boxes: sv.Detections) -> Image:
         return Image.fromarray(((np.sum(boxes.mask, axis=0) > 0).astype(int) * 255).astype(np.uint8))
 
     def _get_stream_from_image(self, image: Image) -> io.BytesIO:
@@ -178,20 +180,22 @@ class StabilityAIAPIInpaintingModelBlockV1(WorkflowBlock):
 
         return image_stream
 
-    def _resize_image(self, image: Image):
-        original_width, original_height = image.size
+    def _resize_image(self, image: Image) -> Image:
+        image_copy = image.copy()
+        original_width, original_height = image_copy.size
 
         current_pixels = original_width * original_height
         scaling_factor = (STABILITY_AI_IMAGE_MAX_PIXELS / current_pixels) ** 0.5
 
-        new_width = int(original_width * scaling_factor)
-        new_height = int(original_height * scaling_factor)
+        new_width = int(original_width * scaling_factor) - 1
+        new_height = int(original_height * scaling_factor) - 1
 
-        resized_image = image.resize((new_width, new_height), Image.LANCZOS) if current_pixels > STABILITY_AI_IMAGE_MAX_PIXELS else image
+        if scaling_factor < 1:
+            return image_copy.resize((new_width, new_height), Image.LANCZOS)
 
-        return resized_image
+        return image_copy
 
-    def _get_response_from_stability_ai_api(self, stability_ai_api_key: str, prompt: str, image_stream: io.BytesIO, mask_stream: io.BytesIO, negative_prompt: str, grow_mask: int, seed: int):
+    def _get_response_from_stability_ai_api(self, stability_ai_api_key: str, prompt: str, image_stream: io.BytesIO, mask_stream: io.BytesIO, negative_prompt: str, grow_mask: int, seed: int) -> requests.Response:
         headers = {
             "authorization": f"Bearer {stability_ai_api_key}",
             "accept": "image/*",
