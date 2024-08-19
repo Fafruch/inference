@@ -141,13 +141,7 @@ class StabilityAIAPIInpaintingModelBlockV1(WorkflowBlock):
         )
 
         if response.status_code == 200:
-            response_image = Image.open(io.BytesIO(response.content))
-
-            result_image = WorkflowImageData(
-                parent_metadata=image.parent_metadata,
-                workflow_root_ancestor_metadata=image.workflow_root_ancestor_metadata,
-                numpy_image=np.array(response_image),
-            )
+            result_image = self._map_response_image_to_workflow_image_data(response.content, image)
 
             return {"image": result_image}
         else:
@@ -156,7 +150,8 @@ class StabilityAIAPIInpaintingModelBlockV1(WorkflowBlock):
     def _get_image_stream(self, image: WorkflowImageData) -> io.BytesIO:
         image_copy = Image.fromarray(image.numpy_image.copy())
         resized_image = self._resize_image(image_copy)
-        image_stream = self._get_stream_from_image(resized_image)
+        colors_remapped_image = self._map_RGB_image_to_BGR_image(resized_image)
+        image_stream = self._get_stream_from_image(colors_remapped_image)
 
         return image_stream
 
@@ -194,6 +189,31 @@ class StabilityAIAPIInpaintingModelBlockV1(WorkflowBlock):
             return image_copy.resize((new_width, new_height), Image.LANCZOS)
 
         return image_copy
+
+    def _map_response_image_to_workflow_image_data(self, response_image: bytes, original_image: WorkflowImageData) -> WorkflowImageData:
+        response_image = Image.open(io.BytesIO(response_image))
+
+        colors_remapped_image = self._map_BGR_image_to_RGB_image(response_image)
+        numpy_image = np.array(colors_remapped_image)
+
+        return WorkflowImageData(
+            parent_metadata=original_image.parent_metadata,
+            workflow_root_ancestor_metadata=original_image.workflow_root_ancestor_metadata,
+            numpy_image=numpy_image,
+        )
+
+
+    def _map_RGB_image_to_BGR_image(self, image: Image) -> Image:
+        r, g, b = image.split()
+        image_corrected = Image.merge("RGB", (b, g, r))
+
+        return image_corrected
+
+    def _map_BGR_image_to_RGB_image(self, image: Image) -> Image:
+        b, g, r = image.split()
+        image_corrected = Image.merge("RGB", (r, g, b))
+
+        return image_corrected
 
     def _get_response_from_stability_ai_api(self, stability_ai_api_key: str, prompt: str, image_stream: io.BytesIO, mask_stream: io.BytesIO, negative_prompt: str, grow_mask: int, seed: int) -> requests.Response:
         headers = {
