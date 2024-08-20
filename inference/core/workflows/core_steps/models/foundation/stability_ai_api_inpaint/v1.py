@@ -123,9 +123,9 @@ class StabilityAIAPIInpaintingModelBlockV1(WorkflowBlock):
         boxes: sv.Detections,
         prompt: str,
         stability_ai_api_key: str,
-        negative_prompt: str,
-        grow_mask: int,
-        seed: int,
+        negative_prompt: Optional[str],
+        grow_mask: Optional[int],
+        seed: Optional[int],
     ) -> BlockResult:
         image_stream = self._get_image_stream(image)
         mask_stream = self._get_mask_stream(boxes)
