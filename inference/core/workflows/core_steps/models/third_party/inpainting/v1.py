@@ -155,7 +155,6 @@ class InpaintingBlockV1(WorkflowBlock):
             prompt=prompt,
             image=image_copy,
             mask_image=common_mask,
-            # TODO: Do we need to resize it first?
             width=width,
             height=height,
             strength=strength,
