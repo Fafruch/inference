@@ -8,6 +8,8 @@ from pydantic import ConfigDict, Field
 from diffusers import AutoPipelineForInpainting, FluxInpaintPipeline, StableDiffusionXLInpaintPipeline
 from PIL import Image
 
+from inference.core.managers.base import ModelManager
+from inference.core.workflows.core_steps.common.entities import StepExecutionMode
 from inference.core.workflows.execution_engine.entities.base import (
     OutputDefinition,
     WorkflowImageData,
@@ -127,6 +129,21 @@ class BlockManifest(WorkflowBlockManifest):
 
 class InpaintingBlockV1(WorkflowBlock):
 
+    def __init__(
+        self,
+        model_manager: ModelManager,
+        api_key: Optional[str],
+        step_execution_mode: StepExecutionMode,
+    ):
+        self._model_manager = model_manager
+        self._api_key = api_key
+        self._step_execution_mode = step_execution_mode
+
+
+    @classmethod
+    def get_init_parameters(cls) -> List[str]:
+        return ["model_manager", "api_key", "step_execution_mode"]
+
     @classmethod
     def get_manifest(cls) -> Type[WorkflowBlockManifest]:
         return BlockManifest
@@ -142,11 +159,42 @@ class InpaintingBlockV1(WorkflowBlock):
         strength: Optional[float],
         seed: Optional[int],
     ) -> BlockResult:
+        if self._step_execution_mode is StepExecutionMode.LOCAL:
+            return self.run_locally(
+                image=image,
+                boxes=boxes,
+                prompt=prompt,
+                model_selection=model_selection,
+                negative_prompt=negative_prompt,
+                num_inference_steps=num_inference_steps,
+                strength=strength,
+                seed=seed,
+            )
+        elif self._step_execution_mode is StepExecutionMode.REMOTE:
+            raise NotImplementedError(
+                "Remote execution is not supported for Inpainting. Run a local or dedicated inference server to use this block (GPU recommended)."
+            )
+        else:
+            raise ValueError(
+                f"Unknown step execution mode: {self._step_execution_mode}"
+            )
+
+    def run_locally(
+        self,
+        image: WorkflowImageData,
+        boxes: sv.Detections,
+        prompt: str,
+        model_selection: Literal["black-forest-labs/FLUX.1-schnell", "diffusers/sdxl-1.0-inpainting-0.1", "stabilityai/sdxl-turbo"],
+        negative_prompt: Optional[str],
+        num_inference_steps: Optional[int],
+        strength: Optional[float],
+        seed: Optional[int],
+    ):
         if boxes.mask is None:
             return {"image": image}
 
         image_copy = image.numpy_image.copy()
-        common_mask = (np.sum(boxes.mask, axis=0) > 0).astype(np.uint8)
+        mask_image = (np.sum(boxes.mask, axis=0) > 0).astype(np.uint8)
         width, height = Image.fromarray(image_copy).size
         generator = torch.Generator().manual_seed(seed)
         pipe = self._get_pipeline_based_model_selection(model_selection)
@@ -154,7 +202,7 @@ class InpaintingBlockV1(WorkflowBlock):
         result = pipe(
             prompt=prompt,
             image=image_copy,
-            mask_image=common_mask,
+            mask_image=mask_image,
             width=width,
             height=height,
             strength=strength,
@@ -171,12 +219,24 @@ class InpaintingBlockV1(WorkflowBlock):
 
         return {"image": result_image}
 
-    def _get_pipeline_based_model_selection(self, model_selection: Literal["black-forest-labs/FLUX.1-schnell", "diffusers/sdxl-1.0-inpainting-0.1", "stabilityai/sdxl-turbo"]):
+    def _get_pipeline_based_model_selection(self, model_selection: Literal[
+        "black-forest-labs/FLUX.1-schnell", "diffusers/sdxl-1.0-inpainting-0.1", "stabilityai/sdxl-turbo"]):
         default_torch_dtype = torch.bfloat16
-        default_model_pipeline = FluxInpaintPipeline.from_pretrained("black-forest-labs/FLUX.1-schnell", torch_dtype=default_torch_dtype).to(DEVICE)
+        default_model_pipeline = FluxInpaintPipeline.from_pretrained(
+            "black-forest-labs/FLUX.1-schnell",
+            torch_dtype=default_torch_dtype
+        ).to(DEVICE)
 
         return {
-            "black-forest-labs/FLUX.1-schnell":  default_model_pipeline,
-            "diffusers/sdxl-1.0-inpainting-0.1": AutoPipelineForInpainting.from_pretrained("diffusers/stable-diffusion-xl-1.0-inpainting-0.1", torch_dtype=default_torch_dtype, variant="fp16").to(DEVICE),
-            "stabilityai/sdxl-turbo": StableDiffusionXLInpaintPipeline.from_pretrained("stabilityai/sdxl-turbo", torch_dtype=default_torch_dtype, safety_checker=None).to(DEVICE),
+            "black-forest-labs/FLUX.1-schnell": default_model_pipeline,
+            "diffusers/sdxl-1.0-inpainting-0.1": AutoPipelineForInpainting.from_pretrained(
+                "diffusers/stable-diffusion-xl-1.0-inpainting-0.1",
+                torch_dtype=default_torch_dtype,
+                variant="fp16")
+            .to(DEVICE),
+            "stabilityai/sdxl-turbo": StableDiffusionXLInpaintPipeline.from_pretrained(
+                "stabilityai/sdxl-turbo",
+                torch_dtype=default_torch_dtype,
+                safety_checker=None)
+            .to(DEVICE),
         }[model_selection]
