@@ -84,7 +84,7 @@ class BlockManifest(WorkflowBlockManifest):
         description="What you wish to see in the output image. A strong, descriptive prompt that clearly defines elements, colors, and subjects will lead to better results.",
     )
     model_selection: Union[
-        Literal["black-forest-labs/FLUX.1-schnell", "diffusers/sdxl-1.0-inpainting-0.1", "stabilityai/sdxl-turbo"],
+        Literal["black-forest-labs/FLUX.1-schnell", "diffusers/sdxl-1.0-inpainting-0.1", "kandinsky-community/kandinsky-2-2-decoder-inpaint", "stabilityai/sdxl-turbo"],
         WorkflowParameterSelector(kind=[STRING_KIND])
     ] = Field(
         default="black-forest-labs/FLUX.1-schnell",
@@ -153,7 +153,7 @@ class InpaintingBlockV1(WorkflowBlock):
         image: WorkflowImageData,
         boxes: sv.Detections,
         prompt: str,
-        model_selection: Literal["black-forest-labs/FLUX.1-schnell", "diffusers/sdxl-1.0-inpainting-0.1", "stabilityai/sdxl-turbo"],
+        model_selection: Literal["black-forest-labs/FLUX.1-schnell", "diffusers/sdxl-1.0-inpainting-0.1", "kandinsky-community/kandinsky-2-2-decoder-inpaint", "stabilityai/sdxl-turbo"],
         negative_prompt: Optional[str],
         num_inference_steps: Optional[int],
         strength: Optional[float],
@@ -184,7 +184,7 @@ class InpaintingBlockV1(WorkflowBlock):
         image: WorkflowImageData,
         boxes: sv.Detections,
         prompt: str,
-        model_selection: Literal["black-forest-labs/FLUX.1-schnell", "diffusers/sdxl-1.0-inpainting-0.1", "stabilityai/sdxl-turbo"],
+        model_selection: Literal["black-forest-labs/FLUX.1-schnell", "diffusers/sdxl-1.0-inpainting-0.1", "kandinsky-community/kandinsky-2-2-decoder-inpaint", "stabilityai/sdxl-turbo"],
         negative_prompt: Optional[str],
         num_inference_steps: Optional[int],
         strength: Optional[float],
@@ -220,7 +220,8 @@ class InpaintingBlockV1(WorkflowBlock):
         return {"image": result_image}
 
     def _get_pipeline_based_model_selection(self, model_selection: Literal[
-        "black-forest-labs/FLUX.1-schnell", "diffusers/sdxl-1.0-inpainting-0.1", "stabilityai/sdxl-turbo"]):
+        "black-forest-labs/FLUX.1-schnell", "diffusers/sdxl-1.0-inpainting-0.1", "kandinsky-community/kandinsky-2-2-decoder-inpaint", "stabilityai/sdxl-turbo"
+    ]):
         default_torch_dtype = torch.bfloat16
         default_model_pipeline = FluxInpaintPipeline.from_pretrained(
             "black-forest-labs/FLUX.1-schnell",
@@ -232,11 +233,14 @@ class InpaintingBlockV1(WorkflowBlock):
             "diffusers/sdxl-1.0-inpainting-0.1": AutoPipelineForInpainting.from_pretrained(
                 "diffusers/stable-diffusion-xl-1.0-inpainting-0.1",
                 torch_dtype=default_torch_dtype,
-                variant="fp16")
-            .to(DEVICE),
+                variant="fp16"
+            ).to(DEVICE),
+            "kandinsky-community/kandinsky-2-2-decoder-inpaint": AutoPipelineForInpainting.from_pretrained(
+                "kandinsky-community/kandinsky-2-2-decoder-inpaint",
+                torch_dtype=default_torch_dtype,
+            ).to(DEVICE),
             "stabilityai/sdxl-turbo": StableDiffusionXLInpaintPipeline.from_pretrained(
                 "stabilityai/sdxl-turbo",
                 torch_dtype=default_torch_dtype,
-                safety_checker=None)
-            .to(DEVICE),
+            ).to(DEVICE),
         }[model_selection]
