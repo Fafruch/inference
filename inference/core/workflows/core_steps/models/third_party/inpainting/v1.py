@@ -88,6 +88,10 @@ class BlockManifest(WorkflowBlockManifest):
         default="black-forest-labs/FLUX.1-schnell",
         description="What you wish to see in the output image. A strong, descriptive prompt that clearly defines elements, colors, and subjects will lead to better results.",
     )
+    negative_prompt: Union[Optional[WorkflowParameterSelector(kind=[STRING_KIND])], str] = Field(
+        description="A blurb of text describing what you do not wish to see in the output image. This is an advanced feature.",
+        default=None,
+    )
     strength: Union[
         Optional[float], WorkflowParameterSelector(kind=[FLOAT_KIND])
     ] = Field(
@@ -133,9 +137,10 @@ class InpaintingBlockV1(WorkflowBlock):
         boxes: sv.Detections,
         prompt: str,
         model_selection: Literal["black-forest-labs/FLUX.1-schnell", "diffusers/sdxl-1.0-inpainting-0.1", "stabilityai/sdxl-turbo"],
-        num_inference_steps: int,
-        strength: float,
-        seed: int,
+        negative_prompt: Optional[str],
+        num_inference_steps: Optional[int],
+        strength: Optional[float],
+        seed: Optional[int],
     ) -> BlockResult:
         if boxes.mask is None:
             return {"image": image}
@@ -155,7 +160,8 @@ class InpaintingBlockV1(WorkflowBlock):
             height=height,
             strength=strength,
             generator=generator,
-            num_inference_steps=num_inference_steps
+            num_inference_steps=num_inference_steps,
+            negative_prompt=negative_prompt
         ).images[0]
 
         result_image = WorkflowImageData(
