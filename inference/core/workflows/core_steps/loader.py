@@ -57,6 +57,9 @@ from inference.core.workflows.core_steps.models.foundation.openai.v1 import (
 from inference.core.workflows.core_steps.models.foundation.segment_anything2.v1 import (
     SegmentAnything2BlockV1,
 )
+from inference.core.workflows.core_steps.models.foundation.stability_ai_api_inpaint.v1 import (
+    StabilityAIAPIInpaintingModelBlockV1,
+)
 from inference.core.workflows.core_steps.models.foundation.yolo_world.v1 import (
     YoloWorldModelBlockV1,
 )
@@ -77,6 +80,9 @@ from inference.core.workflows.core_steps.models.roboflow.object_detection.v1 imp
 )
 from inference.core.workflows.core_steps.models.third_party.barcode_detection.v1 import (
     BarcodeDetectorBlockV1,
+)
+from inference.core.workflows.core_steps.models.third_party.inpainting.v1  import (
+    InpaintingBlockV1,
 )
 from inference.core.workflows.core_steps.models.third_party.qr_code_detection.v1 import (
     QRCodeDetectorBlockV1,
@@ -266,6 +272,8 @@ def load_blocks() -> List[Type[WorkflowBlock]]:
         SIFTComparisonBlockV1,
         SIFTBlockV1,
         TemplateMatchingBlockV1,
+        StabilityAIAPIInpaintingModelBlockV1,
+        InpaintingBlockV1,
     ]
 
 

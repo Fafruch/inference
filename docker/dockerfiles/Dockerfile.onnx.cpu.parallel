@@ -16,6 +16,7 @@ RUN apt update -y && apt install -y \
     && rm -rf /var/lib/apt/lists/*
 
 COPY requirements/requirements.sam.txt \
+    requirements/requirements.inpaint.txt \
     requirements/requirements.clip.txt \
     requirements/requirements.cpu.txt \
     requirements/requirements.http.txt \
@@ -34,6 +35,7 @@ RUN if [ "${TARGETPLATFORM}" = "linux/amd64" ]; then mv requirements.vino.txt re
 RUN pip3 install --upgrade pip  && pip3 install \
     -r _requirements.txt \
     -r requirements.sam.txt \
+    -r requirements.inpaint.txt \
     -r requirements.clip.txt \
     -r requirements.cpu.txt \
     -r requirements.http.txt \
